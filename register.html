@@ -1,65 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Patient Registration</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body { font-family: Arial; padding: 15px; background: #f8f9fa; }
-    h2 { text-align: center; }
-    label { font-weight: bold; margin-top: 10px; display: block; }
-    input, select, textarea, button {
-      width: 100%; padding: 10px; margin-top: 5px; font-size: 16px;
-    }
-    button {
-      background: #0d6efd; color: #fff; border: none;
-      margin-top: 15px; border-radius: 6px;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-<body>
+<div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+  <h2 class="text-2xl font-bold mb-4 text-center">Bedridden Patient Registration</h2>
 
-<h2>Bedridden Patient Registration</h2>
+  <form id="regForm" class="space-y-3" onsubmit="event.preventDefault(); registerPatient();">
 
-<label>National ID *</label>
-<input id="national_id" required>
+    <input class="input-field" type="text" id="national_id" placeholder="National ID *" required>
+    <input class="input-field" type="text" id="full_name" placeholder="Full Name *" required>
+    <input class="input-field" type="date" id="dob" placeholder="Date of Birth">
+    <select class="input-field" id="sex">
+      <option value="">Select Sex</option>
+      <option>Male</option>
+      <option>Female</option>
+    </select>
+    <textarea class="input-field" id="address" placeholder="Address"></textarea>
+    <input class="input-field" type="text" id="island" placeholder="Island">
+    <input class="input-field" type="tel" id="contact" placeholder="Contact Number">
+    <input class="input-field" type="text" id="caregiver_name" placeholder="Caregiver Name">
+    <input class="input-field" type="tel" id="caregiver_contact" placeholder="Caregiver Contact">
+    <textarea class="input-field" id="remarks" placeholder="Remarks"></textarea>
 
-<label>Full Name *</label>
-<input id="full_name">
+    <button class="bg-blue-600 text-white py-2 px-4 rounded w-full hover:bg-blue-700 transition" type="submit">
+      Register Patient
+    </button>
 
-<label>Date of Birth</label>
-<input type="date" id="dob">
-
-<label>Sex</label>
-<select id="sex">
-  <option value="">Select</option>
-  <option>Male</option>
-  <option>Female</option>
-</select>
-
-<label>Address</label>
-<textarea id="address"></textarea>
-
-<label>Island</label>
-<input id="island">
-
-<label>Contact Number</label>
-<input id="contact">
-
-<label>Caregiver Name</label>
-<input id="caregiver_name">
-
-<label>Caregiver Contact</label>
-<input id="caregiver_contact">
-
-<label>Remarks</label>
-<textarea id="remarks"></textarea>
-
-<button onclick="registerPatient()">Register Patient</button>
-
-<p id="status"></p>
+    <p id="status" class="text-center mt-2 text-sm"></p>
+  </form>
+</div>
 
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz_TizFmrdtTFslZdHydEaBXhqOkANnNH-NKBWISnlbeCMvZyRecjeCl1wXZpqQYOu1/exec";
@@ -87,38 +62,30 @@ function registerPatient() {
   .then(res => {
     if (res.status === "exists") {
       status.innerText = "⚠ Patient already registered.";
+      status.classList.add("text-red-500");
       return;
     }
+    status.innerText = "✅ Patient registered successfully!";
+    status.classList.remove("text-red-500");
+    status.classList.add("text-green-500");
 
-    status.innerText = "✅ Patient registered successfully.";
+    // Reset form
+    document.getElementById("regForm").reset();
 
-    // 1️⃣ Reset form
-    document.querySelector("form")?.reset();
-    clearFields();
-
-    // 2️⃣ Go to home page
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 1500);
+    // Redirect to home after 1.5 sec
+    setTimeout(() => window.location.href = "index.html", 1500);
   })
   .catch(() => {
     status.innerText = "❌ Network error. Data not sent.";
+    status.classList.add("text-red-500");
   });
-}
-
-function clearFields() {
-  national_id.value = "";
-  full_name.value = "";
-  dob.value = "";
-  sex.value = "";
-  address.value = "";
-  island.value = "";
-  contact.value = "";
-  caregiver_name.value = "";
-  caregiver_contact.value = "";
-  remarks.value = "";
 }
 </script>
 
+<style>
+.input-field {
+  @apply w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400;
+}
+</style>
 </body>
 </html>
