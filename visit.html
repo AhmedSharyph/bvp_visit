@@ -3,136 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <title>Patient Visit</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Tailwind -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Choices.js -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-
-  <style>
-    .choices__inner {
-      border-radius: 0.5rem !important;
-      border-color: #d1d5db !important;
-      min-height: 44px;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 </head>
-
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-<div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
-  <h2 class="text-2xl font-bold mb-4 text-center">Patient Visit</h2>
+<div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg animate__animated animate__fadeIn">
+  <h2 class="text-2xl font-bold mb-4 text-center text-gray-800">Patient Visit</h2>
 
   <form id="visitForm" class="space-y-3" onsubmit="event.preventDefault(); saveVisit();">
 
-    <!-- Patient -->
-    <select id="patient" required
-      class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400">
-      <option value="">Select Patient</option>
+    <select class="input-field" id="patient" required>
+      <option value="">Loading patients...</option>
     </select>
 
-    <!-- Visit Type -->
-    <select id="visit_type" required
-      class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400">
+    <select class="input-field" id="visit_type" required>
       <option>Nurse Visit</option>
       <option>Doctor Visit</option>
       <option>Non-Routine Visit</option>
     </select>
 
-    <!-- Findings -->
-    <textarea id="findings" rows="3"
-      class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
-      placeholder="Findings"></textarea>
+    <textarea class="input-field" id="findings" placeholder="Findings"></textarea>
+    <textarea class="input-field" id="actions_taken" placeholder="Actions Taken"></textarea>
+    <input class="input-field" type="date" id="next_visit_date">
+    <input class="input-field" type="text" id="entered_by" placeholder="Staff Name (optional)">
 
-    <!-- Actions -->
-    <textarea id="actions_taken" rows="3"
-      class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400"
-      placeholder="Actions Taken"></textarea>
-
-    <!-- Next Visit -->
-    <input type="date" id="next_visit_date"
-      class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400">
-
-    <!-- Entered By -->
-    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
-      Entered By
-    </label>
-    <select id="entered_by" required>
-      <option value="">Loading staff...</option>
-    </select>
-
-    <!-- Submit -->
-    <button type="submit"
-      class="bg-green-600 text-white py-2 px-4 rounded w-full hover:bg-green-700 transition">
+    <button class="bg-green-600 text-white py-2 px-4 rounded w-full hover:bg-green-700 transition" type="submit">
       Save Visit
     </button>
 
-    <p id="status" class="text-center text-sm mt-2"></p>
+    <p id="status" class="text-center mt-2 text-sm"></p>
   </form>
 </div>
 
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxmcWZi7YlMySKKbBhKkhUh3Ynj1LuVMV0o7YlgcTCrp8AA4pDypJs4XZWWi2dLn7Mq/exec";
-const STAFF_API_URL = "https://script.google.com/macros/s/AKfycbyaBLAkJtS1lH0uJXZxmpLoHwb6kM51lQWyMuLlvDGXIdfovZhl8ag3MnMDL_aeq-oGmA/exec";
-const HCF_FILTER = "SHAH-PHU";
 
-let staffChoices;
-
-/* Load patients */
-function loadPatients() {
-  fetch(GAS_URL + "?action=getPatients")
-    .then(r => r.json())
-    .then(data => {
-      data.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.national_id;
-        opt.textContent = `${p.full_name} (${p.national_id})`;
-        patient.appendChild(opt);
-      });
-    })
-    .catch(() => status.textContent = "⚠ Could not load patients");
+// Load patients for dropdown
+async function loadPatients() {
+  try {
+    const res = await fetch(GAS_URL + "?action=getPatients");
+    const data = await res.json();
+    const sel = document.getElementById("patient");
+    sel.innerHTML = '<option value="">Select Patient</option>';
+    data.forEach(p => {
+      sel.innerHTML += `<option value="${p.national_id}">${p.full_name} (${p.national_id})</option>`;
+    });
+  } catch {
+    status.innerText = "⚠ Could not load patients.";
+    status.className = "text-red-500 text-center mt-2";
+  }
 }
 
-/* Load staff */
-async function loadStaff() {
-  const select = document.getElementById("entered_by");
-  const res = await fetch(STAFF_API_URL);
-  const data = await res.json();
-
-  const filtered = data.filter(s => s.Hcf === HCF_FILTER);
-
-  let html = '<option value="">Select Staff</option>';
-  filtered.forEach(s => {
-    const name = s["Staff Name and Designation"];
-    html += `<option value="${name}">${name}</option>`;
-  });
-  html += '<option value="not_in_list">+ Register New</option>';
-
-  select.innerHTML = html;
-
-  staffChoices = new Choices(select, {
-    searchEnabled: true,
-    shouldSort: false,
-    itemSelectText: ''
-  });
-
-  select.addEventListener("change", () => {
-    if (select.value === "not_in_list") {
-      window.open(
-        `https://shaviyanipublichealth.blogspot.com/p/register-new.html?hcf=${encodeURIComponent(HCF_FILTER)}`,
-        "Register",
-        "width=800,height=600"
-      );
-      staffChoices.setChoiceByValue("");
-    }
-  });
-}
-
-/* Save visit */
-function saveVisit() {
+async function saveVisit() {
   const payload = {
     action: "addVisit",
     national_id: patient.value,
@@ -143,28 +67,39 @@ function saveVisit() {
     entered_by: entered_by.value
   };
 
-  fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.json())
-  .then(() => {
-    status.textContent = "✅ Visit saved successfully";
-    status.className = "text-green-600 text-center text-sm";
-    visitForm.reset();
-    staffChoices.removeActiveItems();
-    setTimeout(() => location.href = "index.html", 1500);
-  })
-  .catch(() => {
-    status.textContent = "❌ Network error";
-    status.className = "text-red-600 text-center text-sm";
-  });
+  try {
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if(data.error){
+      status.innerText = `❌ ${data.error}`;
+      status.className = "text-red-500 text-center mt-2";
+      return;
+    }
+
+    status.innerText = "✅ Visit saved successfully!";
+    status.className = "text-green-500 text-center mt-2";
+    document.getElementById("visitForm").reset();
+    setTimeout(()=> window.location.href="index.html",1500);
+
+  } catch {
+    status.innerText = "❌ Network error. Data not sent.";
+    status.className = "text-red-500 text-center mt-2";
+  }
 }
 
-/* Init */
+// Initialize dropdown
 loadPatients();
-loadStaff();
 </script>
+
+<style>
+.input-field {
+  @apply w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400;
+}
+</style>
 
 </body>
 </html>
